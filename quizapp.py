@@ -31,7 +31,6 @@ class QuizApp(ctk.CTk):
         
         # Initialize selected_certif to track the current selection
         self.selected_certif = None
-        self.current_question_index = 33 # 400/398/268=multiple/33=hotspot
         self.selected_answer = None
         self.main_menu_frame_height = 350
         self.questions_frame_height = 350
@@ -148,19 +147,32 @@ class QuizApp(ctk.CTk):
             self.ask_question()
             self.disable_certif_combobox()
             self.disable_start_button()
+    
+    def get_available_questions(self):
+        available_questions = self.questions_df[self.questions_df["Counter"] == 0]
+        return available_questions
+    
+    def pick_random_questions(self, available_questions):
+        # pick a question from the list of questions randomly
+        question_row = available_questions.sample(n=1).iloc[0]
+        return question_row
             
     def ask_question(self):
         self.display_submission_button()
         self.display_stop_quiz_button()
-        
-        if self.current_question_index >= len(self.questions_df):
+
+        available_questions = self.get_available_questions()
+        if available_questions.empty:
             messagebox.showinfo("End", "No more questions available.")
             return
 
-        self.current_question = self.questions_df.iloc[self.current_question_index]
-        question_type = self.current_question['QuestionType']
-        self.display_question_type(question_type)
-        print("Question_type:", question_type)
+        self.question_row = self.pick_random_questions(available_questions)
+        self.question_type = self.question_row['QuestionType']
+        self.current_question = self.question_row  # Update current_question for consistency in other methods
+
+        # Update the method calls to use the newly assigned question_row and question_type
+        self.display_question_type(self.question_type)
+
                
     def insert_question_text(self):    
         self.questions_display.configure(
@@ -303,7 +315,6 @@ class QuizApp(ctk.CTk):
         self.selected_choices = set()
         
         # Move to the next question
-        self.current_question_index += 1
         self.ask_question()
     
     def show_explanation(self):
@@ -341,13 +352,14 @@ class QuizApp(ctk.CTk):
     
     # Display the question based on the question type
     def display_question_type(self, question_type):
-        if question_type == 'yesno':
+        # Now directly using self.question_type
+        if self.question_type == 'yesno':
             self.display_yesno_question()
-        elif question_type == 'hotspot':
+        elif self.question_type == 'hotspot':
             self.display_hotspot_question()
-        elif question_type == 'draganddrop':
+        elif self.question_type == 'draganddrop':
             self.display_draganddrop_question()
-        elif question_type == 'multiplechoice':
+        elif self.question_type == 'multiplechoice':
             self.display_multiplechoice_question()
              
     def display_multiplechoice_question(self):
