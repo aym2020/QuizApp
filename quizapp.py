@@ -47,6 +47,12 @@ class QuizApp(ctk.CTk):
         self.geometry(f"{self.width}x{self.height}+{padding // 2}+{padding // 2}")
         self.minsize(self.width, self.height)
         print("width:", self.width, "height:", self.height)
+        
+        # global variables
+        self.correct_answer_time = 50
+        self.green = "#3EB20C" # Correctly selected
+        self.dark_green = "#2B720C" # Correct but not selected
+        self.red = "#ff4444" # Incorrectly selected
      
         # DataFrame for questions
         self.questions_df = pd.DataFrame(questions_dict)
@@ -118,12 +124,22 @@ class QuizApp(ctk.CTk):
         self.bind("<Configure>", self.adjust_widget_sizes)
         # self.print_total_height_widgets_in_frame(self.main_menu_frame, "main_menu_frame")
         
+    def count_questions_certif(self, choice):
+        question_count = self.questions_df[self.questions_df['CertifCode'].str.upper() == choice]['QuestionID'].nunique()
+        return question_count
 
+    def count_correct_answers_certif(self, choice):
+        correct_answers_count = self.questions_df[(self.questions_df['CertifCode'].str.upper() == choice) & (self.questions_df['Counter'] != 0)].shape[0]
+        return correct_answers_count
+
+    def update_question_count_label(self, choice):
+        self.question_count_label.configure(
+            text=f"NUMBER OF QUESTIONS: {self.count_questions_certif(choice)} ({self.count_correct_answers_certif(choice)})")
+    
     def optionmenu_callback(self, choice):           
         self.selected_certif = choice
-        question_count = self.questions_df[self.questions_df['CertifCode'].str.upper() == choice]['QuestionID'].nunique()
         self.question_count_label.configure(
-            text=f"NUMBER OF QUESTIONS: {question_count}")
+            text=self.update_question_count_label(choice))
         self.start_button.configure(
             fg_color="#E7E7E7", 
             bg_color="transparent",
@@ -154,12 +170,24 @@ class QuizApp(ctk.CTk):
     
     def pick_random_questions(self, available_questions):
         # pick a question from the list of questions randomly
-        question_row = available_questions.sample(n=1).iloc[0]
+        # question_row = available_questions.sample(n=1).iloc[0]
+        
+        question_row = available_questions[available_questions["QuestionID"] == 457].iloc[0]
+        print("id:", question_row["QuestionID"])
+        print("counter:", question_row["Counter"])
+        print("certif:", question_row["CertifCode"])
+        print("type:", question_row["QuestionType"])
+        print("answer:", question_row["Answer"])
         return question_row
+    
+    # Decrease counter for all questions that have been answered correctly previously
+    def decrease_counter(self):
+        self.questions_df.loc[self.questions_df['Counter'] != 0, 'Counter'] -= 1
             
     def ask_question(self):
         self.display_submission_button()
         self.display_stop_quiz_button()
+        self.decrease_counter()
 
         available_questions = self.get_available_questions()
         if available_questions.empty:
@@ -240,9 +268,12 @@ class QuizApp(ctk.CTk):
     def check_and_update_choices(self):
         correct_answers = self.current_question['Answer']
         question_type = self.current_question['QuestionType']
+        is_full_correct = True  # Assume the answer is fully correct until proven otherwise
         
-        # Remove existing button and create new ones for next steps.
+        # Remove the submit button
         self.submission_frame.winfo_children()[0].destroy()
+        
+        # Display the next question button and the explanation button
         self.display_show_explanation_button()
         self.display_next_question_button()
 
@@ -256,10 +287,20 @@ class QuizApp(ctk.CTk):
                 answer_index = int(choice_id) - 1  # Adjusting index to align with correct_answers (assuming it's 0-indexed)
 
                 is_correct = (choice_value == correct_answers[answer_index])
+                
+                if not is_correct and choice in self.selected_choices:
+                    is_full_correct = False
+                elif is_correct and choice not in self.selected_choices:
+                    is_full_correct = False
             else:
                 # For non-hotspot questions, check if the choice is in the list/set of correct answers.
                 is_correct = choice in correct_answers
-            
+                
+                if not is_correct and choice in self.selected_choices:
+                    is_full_correct = False
+                elif is_correct and choice not in self.selected_choices:
+                    is_full_correct = False
+                        
             # Now, determine the color based on correctness and selection.
             if is_correct and choice in self.selected_choices:
                 button.configure(
@@ -281,7 +322,17 @@ class QuizApp(ctk.CTk):
                     fg_color="#202020", 
                     text_color="white", 
                     text_color_disabled="white")  # Default for non-selected/non-relevant.
-
+        
+        if is_full_correct:
+            # in question_df, update the counter for the question by adding the correct_answer_time
+            self.questions_df.loc[self.questions_df['QuestionID'] == self.current_question['QuestionID'], 'Counter'] += self.correct_answer_time
+            self.update_question_count_label(self.selected_certif)
+            print(self.count_correct_answers_certif(self.selected_certif))
+                
+            self.answers_frame.configure(border_width = 2, border_color = self.green) # Green border for correct answers
+        else:
+            self.answers_frame.configure(border_width = 2, border_color = self.red) # Red border for incorrect answers
+            
     
     def stop_quiz(self):
         self.clear_questions_display()
@@ -313,6 +364,9 @@ class QuizApp(ctk.CTk):
          
         # Reset the selected choices
         self.selected_choices = set()
+        
+        # Remove the border color from the answers frame
+        self.answers_frame.configure(border_width = 0, border_color = "black")
         
         # Move to the next question
         self.ask_question()
@@ -371,11 +425,12 @@ class QuizApp(ctk.CTk):
         self.set_answer_for_multiplechoice()
     
     def display_draganddrop_question(self):
-        self.questions_display.configure(
-            state="normal")  # Temporarily enable the widget to insert text
-        self.questions_display.insert("1.0", self.current_question['Question'])  # Assume you insert a long question here
-        self.questions_display.configure(
-            state="disabled")  # Disable the widget to make it read-only
+        self.selected_choices = set() # Store the selected choices
+        self.choice_buttons = {} # Store the buttons in a dictionary to access them later
+        self.correct_answer = set(self.current_question['Answer'])
+        
+        self.insert_question_text()
+        self.set_answer_for_draganddrop()
         pass
     
     def display_hotspot_question(self):
@@ -420,7 +475,7 @@ class QuizApp(ctk.CTk):
             if index % 5 == 0:
                 choice_row += 1
                 choice_column = 0
-            choice_button.grid(row=choice_row, column=choice_column, padx=5, pady=5, sticky="nsew")
+            choice_button.grid(row=choice_row, column=choice_column, padx=8, pady=8, sticky="nsew")
             self.choice_buttons[choice] = choice_button
             choice_column += 1
 
@@ -439,7 +494,7 @@ class QuizApp(ctk.CTk):
             hover_color="#505050",
             corner_radius=30,
             command=lambda: self.toggle_choice("A"))
-        yes_button.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        yes_button.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
         self.choice_buttons["A"] = yes_button
 
         no_button = ctk.CTkButton(
@@ -452,7 +507,7 @@ class QuizApp(ctk.CTk):
             hover_color="#505050",
             corner_radius=30,
             command=lambda: self.toggle_choice("B"))
-        no_button.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+        no_button.grid(row=1, column=1, padx=8, pady=8, sticky="nsew")
         self.choice_buttons["B"] = no_button
     
     def set_answer_for_hotspot(self):
@@ -469,13 +524,58 @@ class QuizApp(ctk.CTk):
                     fg_color="#202020",
                     hover_color="#505050",
                     corner_radius=30)
-                button.grid(row=choice_row, column=choice_index, padx=5, pady=5, sticky="nsew")
+                button.grid(row=choice_row, column=choice_index, padx=8, pady=8, sticky="nsew")
                 self.choice_buttons[choice_id] = button
             choice_row += 1
+    
+    def set_answer_for_draganddrop(self):
+        # Assume all choices are pairs and are provided in order like A, 1, B, 2, C, 3...
+        num_pairs = len(self.current_question['Choices']) // 2  # Determine the number of pairs
+        letter_row = 1
+        number_row = 2
+
+        # Reset choice_column for every new pair
+        for pair_index in range(num_pairs):
+            letter_choice = self.current_question['Choices'][pair_index * 2]  # Assuming even indexes are letters
+            number_choice = self.current_question['Choices'][pair_index * 2 + 1]  # Assuming odd indexes are numbers
+
+            # Create button for letter choice
+            letter_button = ctk.CTkButton(
+                self.answers_frame,
+                text=letter_choice,
+                command=lambda choice=letter_choice: self.toggle_choice(choice),
+                font=(self.font, 20, "bold"),
+                text_color="white",
+                fg_color="#202020",
+                bg_color="transparent",
+                hover_color="#505050",
+                corner_radius=30)
+            letter_button.grid(row=letter_row, column=pair_index, padx=8, pady=8, sticky="nsew")
+            self.choice_buttons[letter_choice] = letter_button
+
+            # Create button for number choice
+            number_button = ctk.CTkButton(
+                self.answers_frame,
+                text=number_choice,
+                command=lambda choice=number_choice: self.toggle_choice(choice),
+                font=(self.font, 20, "bold"),
+                text_color="white",
+                fg_color="#202020",
+                bg_color="transparent",
+                hover_color="#505050",
+                corner_radius=30)
+            number_button.grid(row=number_row, column=pair_index, padx=8, pady=8, sticky="nsew")
+            self.choice_buttons[number_choice] = number_button
+
+        # Configure the grid columns to distribute space evenly
+        for col_index in range(num_pairs):
+            self.questions_frame.grid_columnconfigure(col_index, weight=1)
+
     
     # ----------------------------------------------------------------------------------------------
     # DISPLAY WIDGETS
     # ----------------------------------------------------------------------------------------------
+    
     def display_header(self):
         self.header = ctk.CTkLabel(
             self.main_menu_frame, 
@@ -697,6 +797,7 @@ class QuizApp(ctk.CTk):
     def destroy_question_text(self):
         self.questions_display.destroy()
             
+            
     # ----------------------------------------------------------------------------------------------
     # CLEAR WIDGETS
     # ----------------------------------------------------------------------------------------------
@@ -710,6 +811,14 @@ class QuizApp(ctk.CTk):
     
     def clear_choice_buttons_dict(self):
         self.choice_buttons.clear()
+    
+    
+    # ----------------------------------------------------------------------------------------------
+    # SET VARIABLES
+    # ----------------------------------------------------------------------------------------------
+    
+    def set_correct_answer_time(self, time):
+        self.correct_answer_time = time
         
 # Create the main window (root)
 if __name__ == "__main__":
