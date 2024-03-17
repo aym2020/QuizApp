@@ -1,4 +1,6 @@
 import tkinter as tk
+from tkinter import font as tkfont, Tk
+from customtkinter import CTkFont
 from tkinter import messagebox, Toplevel, filedialog, font
 import customtkinter as ctk
 import pandas as pd
@@ -8,6 +10,13 @@ import os
 import ctypes
 import sys
 import re
+
+
+"""
+TODO:
+- Fix answer of the question 372/46
+- Add custom fonts
+"""
 
 def get_user_data_path():
     home_dir = os.path.expanduser('~')  # Get the user's home directory
@@ -53,52 +62,53 @@ class QuizApp(ctk.CTk):
         
         self.title("Quiz App")
         
-        self.current_monitor = self.get_current_monitor()  
-        self.screen_scaling_factor =  self.get_screen_scaling_factor()
-        self.screen_width, self.screen_height = self.get_actual_screen_dimensions()
-  
+        self.current_monitor                    = self.get_current_monitor()  
+        self.screen_scaling_factor              = self.get_screen_scaling_factor()
+        self.screen_width, self.screen_height   = self.get_actual_screen_dimensions()
+        self.size_reference                     = 1000
+    
         # height of frame and widgets
-        self.initialize_widgets_height(self.screen_width, self.screen_height, self.screen_scaling_factor)
-        
+        self.initialize_widgets_height(self.screen_width, self.screen_height, self.size_reference, self.screen_scaling_factor)
+  
         # Screen dimensions and window sizing
-        self.width = self.screen_width - self.padding
+        self.width  = self.screen_width  - self.padding
         self.height = self.screen_height - self.padding
         self.geometry(f"{self.width}x{self.height}+{self.padding//2}+{self.padding//2}")
         self.minsize(self.width, self.height)
-                
+ 
+        
         # Initialize selected_certif to track the current selection
-        self.selected_certif = None
-        self.selected_answer = None
-        self.font = "Made Tommy"
-        self.font_lisible = "Consola Mono"
+        self.selected_certif    = None
+        self.selected_answer    = None
+        self.name_app           = "EZ CERTIF"
+        self.font               = "Tw Cen MT" 
+        self.font_lisible       = "Consolas"
+        self.family_font_header = "Tw Cen MT Condensed Extra Bold"
+        self.font_header        = ctk.CTkFont(family=self.family_font_header, size=70, weight="bold")#, slant="italic")
         
         # global variables
-        self.test_color = False
-        self.test_question = False
-        self.question_picked = 154 # 124/457/249 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno / bug 137 171 249 *187
-        self.correct_answer_time = 50
-        self.green = "#3EB20C" # Correctly selected
-        self.dark_green = "#2B720C" # Correct but not selected
-        self.red = "#ff4444" # Incorrectly selected
-        self.dark_grey = "#151515"
-        self.light_grey = "#303030"
-        self.white_grey = "#E7E7E7"
-        self.hover_grey = "#505050"
-        self.mid_grey = "#202020"
-        self.pink = "#ff9898"
-        self.dark_pink = "#ff59c7"
-    
+        self.test_color             = False
+        self.test_question          = False
+        self.question_picked        = 100 # 124/457/249 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno / bug 137 171 249 *187
+        self.correct_answer_time    = 50
+        self.green                  = "#3EB20C" # Correctly selected
+        self.dark_green             = "#2B720C" # Correct but not selected
+        self.red                    = "#ff4444" # Incorrectly selected
+        self.dark_grey              = "#151515"
+        self.light_grey             = "#303030"
+        self.white_grey             = "#E7E7E7"
+        self.hover_grey             = "#505050"
+        self.mid_grey               = "#202020"
+        self.pink                   = "#ff9898"
+        self.dark_pink              = "#ff59c7"
+        self.darker_grey            = "#080808"
+        
         # DataFrame for questions
         self.questions_df = pd.DataFrame(questions_dict)
         
         # Initialize the main menu
         self.initialize_main_menu()
-        
-        if self.test_color is True or self.test_question is True:
-            print("current_monitor:", self.current_monitor)
-            print("screen_scaling_factor:", self.screen_scaling_factor)
-            print("screen_width:", self.screen_width, "screen_height:", self.screen_height)
-        
+                
         if self.test_color is True:
             self.use_test_color()
 
@@ -121,55 +131,61 @@ class QuizApp(ctk.CTk):
         scaling_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
         return scaling_factor
     
-    def initialize_widgets_height(self, screen_width, screen_height, screen_scaling_factor):
-        if screen_width == 1920 and screen_height == 1080:
-            self.main_menu_frame_height         = 225/1000  *self.screen_height*screen_scaling_factor
-            self.header_height                  = 58/1000   *self.screen_height*screen_scaling_factor
-            self.certif_select_combobox_height  = 29/1000   *self.screen_height*screen_scaling_factor
-            self.certif_select_label_height     = 44/1000   *self.screen_height*screen_scaling_factor
-            self.question_count_label_height    = 44/1000   *self.screen_height*screen_scaling_factor
+    def initialize_widgets_height(self, screen_width, screen_height, size_reference, screen_scaling_factor):
+        if screen_width == 1920 and screen_height == 1080 and screen_scaling_factor == 1:
+            # Height of frame and widgets
+            self.main_menu_frame_height         = 242   /size_reference *screen_height
+            self.header_height                  = 80    /size_reference *screen_height
+            self.certif_select_combobox_height  = 29    /size_reference *screen_height
+            self.certif_select_label_height     = 44    /size_reference *screen_height
+            self.question_count_label_height    = 44    /size_reference *screen_height
             
-            self.start_and_reset_frame_height   = 68/1000   *self.screen_height*screen_scaling_factor
-            self.start_button_height            = 58/1000   *self.screen_height*screen_scaling_factor
+            self.start_and_reset_frame_height   = 80    /size_reference *screen_height
+            self.start_button_height            = 58    /size_reference *screen_height
             
-            self.question_space                 = 15    
-            self.questions_frame_height         = 235/1000  *self.screen_height*screen_scaling_factor
-            self.questions_text_height          = 235/1000  *self.screen_height*screen_scaling_factor
+            self.question_space                 = 0
+            self.questions_frame_height         = 235   /size_reference *screen_height
+            self.questions_text_height          = 235   /size_reference *screen_height
             
-            self.answers_frame_height           = 102/1000  *self.screen_height*screen_scaling_factor
-            self.second_answer_frame_height     = 102/1000  *self.screen_height*screen_scaling_factor
+            self.answers_frame_height           = 102   /size_reference *screen_height
+            self.second_answer_frame_height     = 102   /size_reference *screen_height
             self.answer_space                   = 110
-            self.second_answer_frame_space      = 50
+            self.second_answer_frame_space      = 25
             
             self.submission_space               = 160
-            self.submission_frame_height        = 88/1000   *self.screen_height*screen_scaling_factor
-            self.stop_button_height             = 58/1000   *self.screen_height*screen_scaling_factor
-            self.submission_button_height       = 58/1000   *self.screen_height*screen_scaling_factor
-                        
+            self.submission_frame_height        = 88    /size_reference *screen_height
+            self.stop_button_height             = 58    /size_reference *screen_height
+            self.submission_button_height       = 58    /size_reference *screen_height
+            
+            # Padding            
             self.padding = 180
+            self.vertical_padding_combobox = 20/self.screen_scaling_factor
+            self.horizontal_padding_combobox = 0/self.screen_scaling_factor
+            self.vertical_padding_count_label = 20/self.screen_scaling_factor
+            self.horizontal_padding_count_label = 0/self.screen_scaling_factor
     
     
     def adjust_widget_sizes(self, event):
         # Adjust the width of frames to match the app's size
-        current_width = self.winfo_width()
-        current_height = self.winfo_height()
-        
+        current_width   = self.winfo_width()
+        current_height  = self.winfo_height()
+            
         self.main_menu_frame.place_configure(
-            width=current_width, 
-            height=current_height)
+            width   = current_width, 
+            height  = current_height)
         self.start_and_reset_frame.place_configure(
-            height=self.start_and_reset_frame_height)
+            height  = self.start_and_reset_frame_height)
         self.questions_frame.place_configure(
-            width=current_width, 
-            height=current_height - self.main_menu_frame_height)
+            width   = current_width, 
+            height  = current_height - self.main_menu_frame_height)
         self.submission_frame.place_configure(
-            height=self.submission_frame_height)
+            height  = self.submission_frame_height)
         self.header.configure(
-            width=current_width)
+            width   = current_width)
         self.certif_select_label.configure(
-            width=current_width)
+            width   = current_width)
         self.question_count_label.configure(
-            width=current_width)
+            width   = current_width)
        
     def initialize_main_menu_frame(self):
         # Main Menu Frame
@@ -232,6 +248,12 @@ class QuizApp(ctk.CTk):
                            
         # To ensure the frame adjusts its width when the window is resized:
         self.bind("<Configure>", self.adjust_widget_sizes)
+        
+        if self.test_color is True or self.test_question is True:
+            print("current_monitor:", self.current_monitor)
+            print("screen_scaling_factor:", self.screen_scaling_factor)
+            print("screen_width:", self.screen_width, "screen_height:", self.screen_height)
+            print("width:", self.width, "height:", self.height)
     
     def use_test_color(self):
         self.main_menu_frame.configure(
@@ -546,36 +568,7 @@ class QuizApp(ctk.CTk):
         
         # Move to the next question
         self.ask_question()
-    
-    def show_explanation(self):
-        self.destroy_explanation_window()
-            
-        # Create a new Toplevel window to display the explanation
-        self.explanation_window = ctk.CTkToplevel(self)
-        self.explanation_window.title("Explanation")
-        self.explanation_window.attributes('-topmost', True)  # Make the window stay on top
-        
-        # Create a main frame inside the Toplevel window for content
-        main_frame = ctk.CTkFrame(self.explanation_window)
-        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)  # Use padx and pady to simulate border spacing
-        main_frame.configure(
-            fg_color="#151515")
-        
-        # Get the explanation text from the current question
-        explanation_text = self.current_question['Explanation']
-
-        # Create a label inside the main_frame to display the explanation
-        explanation_label = ctk.CTkLabel(main_frame, text=explanation_text, wraplength=600)
-        explanation_label.pack(padx=20, pady=20)  # Internal padding for the label
-        explanation_label.configure(
-            fg_color="#151515", 
-            text_color=self.pink, 
-            font=(self.font_lisible, 16),
-            justify="left")
-        
-        # Set the Toplevel window to be resizable
-        self.explanation_window.resizable(True, True)
-        
+     
     # ----------------------------------------------------------------------------------------------
     # DISPLAY QUESTION TYPE
     # ----------------------------------------------------------------------------------------------
@@ -838,8 +831,8 @@ class QuizApp(ctk.CTk):
     def display_header(self):
         self.header = ctk.CTkLabel(
             self.main_menu_frame, 
-            text="QUIZZ APP", 
-            font=(self.font, 40, "bold"), 
+            text=self.name_app, 
+            font=self.font_header, 
             fg_color=self.pink, 
             text_color="black")
         self.header.pack()
@@ -850,7 +843,7 @@ class QuizApp(ctk.CTk):
         self.certif_select_label = ctk.CTkLabel(
             self.main_menu_frame, 
             text="SELECT THE CERTIFICATION", 
-            font=(self.font, 20, "bold"), 
+            font=(self.font, 25, "bold"), 
             fg_color="#000000", 
             text_color=self.pink)
         self.certif_select_label.pack()
@@ -865,7 +858,7 @@ class QuizApp(ctk.CTk):
             values=certif_codes, 
             command=self.optionmenu_callback, 
             font=(self.font, 20, "bold"))
-        self.certif_select_combobox.pack(pady=(20, 0))
+        self.certif_select_combobox.pack(pady=(self.vertical_padding_combobox, self.horizontal_padding_combobox))
         self.certif_select_combobox.configure(
             width=200,
             text_color="white",
@@ -874,17 +867,17 @@ class QuizApp(ctk.CTk):
             dropdown_fg_color="white",
             dropdown_hover_color="black",
             dropdown_text_color="black",
-            fg_color="#151515")
+            fg_color=self.dark_grey)
         self.certif_select_combobox.set("")
     
     def display_question_count_label(self):
         self.question_count_label = ctk.CTkLabel(
             self.main_menu_frame, 
             text="NUMBER OF QUESTIONS: -", 
-            font=(self.font, 20, "bold"), 
+            font=(self.font, 25, "bold"), 
             fg_color="#000000", 
             text_color=self.pink)
-        self.question_count_label.pack(pady=(20, 0))
+        self.question_count_label.pack(pady=(self.vertical_padding_count_label, self.horizontal_padding_count_label))
         self.question_count_label.configure(
             height=self.question_count_label_height)
         
@@ -923,9 +916,9 @@ class QuizApp(ctk.CTk):
     def display_question_text(self):
         self.questions_display = ctk.CTkTextbox(
             self.questions_frame,
-            font=(self.font_lisible, 16, "bold"),
-            fg_color="#303030",
-            text_color=self.pink,
+            font=(self.font_lisible, 20),
+            fg_color=self.darker_grey,
+            text_color=self.white_grey,
             border_spacing=20,
             wrap="word",)
         self.questions_display.pack(pady=0, anchor='center')
@@ -955,7 +948,7 @@ class QuizApp(ctk.CTk):
             text="SUBMIT",
             font=(self.font, 20, "bold"),
             text_color="black",
-            fg_color="#E7E7E7", 
+            fg_color=self.white_grey,
             bg_color="transparent",
             hover_color=self.pink,
             corner_radius=10,
@@ -971,7 +964,7 @@ class QuizApp(ctk.CTk):
             text="EXPLANATIONS",
             font=(self.font, 20, "bold"),
             text_color="black",
-            fg_color="#E7E7E7", 
+            fg_color=self.white_grey,
             bg_color="transparent",
             hover_color=self.pink,
             corner_radius=10,
@@ -987,7 +980,7 @@ class QuizApp(ctk.CTk):
             text="NEXT QUESTION",
             font=(self.font, 20, "bold"),
             text_color="black",
-            fg_color="#E7E7E7", 
+            fg_color=self.white_grey,
             bg_color="transparent",
             hover_color=self.pink,
             corner_radius=10,
@@ -996,6 +989,35 @@ class QuizApp(ctk.CTk):
         next_question_button.configure(
             height=60, 
             width=200)
+    
+    def show_explanation(self):
+        self.destroy_explanation_window()
+            
+        # Create a new Toplevel window to display the explanation
+        self.explanation_window = ctk.CTkToplevel(self)
+        self.explanation_window.title("Explanation")
+        self.explanation_window.attributes('-topmost', True)  # Make the window stay on top
+        
+        # Create a main frame inside the Toplevel window for content
+        main_frame = ctk.CTkFrame(self.explanation_window)
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=40, pady=40)  # Use padx and pady to simulate border spacing
+        main_frame.configure(
+            fg_color=self.darker_grey)
+        
+        # Get the explanation text from the current question
+        explanation_text = self.current_question['Explanation']
+
+        # Create a label inside the main_frame to display the explanation
+        explanation_label = ctk.CTkLabel(main_frame, text=explanation_text, wraplength=600)
+        explanation_label.pack(padx=20, pady=20)  # Internal padding for the label
+        explanation_label.configure(
+            fg_color=self.darker_grey,
+            text_color=self.white_grey, 
+            font=(self.font_lisible, 20),
+            justify="left")
+        
+        # Set the Toplevel window to be resizable
+        self.explanation_window.resizable(True, True)
     
     # ----------------------------------------------------------------------------------------------
     # SHOW AND HIDE FRAMES
@@ -1043,7 +1065,7 @@ class QuizApp(ctk.CTk):
             dropdown_fg_color="white",
             dropdown_hover_color="black",
             dropdown_text_color="black",
-            fg_color="#151515",
+            fg_color=self.dark_grey,
             state="normal")
         self.certif_select_combobox.set("")
     
