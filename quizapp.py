@@ -5,24 +5,48 @@ import pandas as pd
 from screeninfo import get_monitors
 import json
 import os
-import sys
 import ctypes
+import sys
+import re
+
+def get_user_data_path():
+    home_dir = os.path.expanduser('~')  # Get the user's home directory
+    app_data_dir = os.path.join(home_dir, '.quizzapp')  # Path for your app's data
+    if not os.path.exists(app_data_dir):
+        os.makedirs(app_data_dir)  # Create the directory if it doesn't exist
+    return os.path.join(app_data_dir, 'quizzapp.json')
 
 def resource_path(relative_path):
     """Get the absolute path to the resource, works for development and for PyInstaller"""
-    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-json_file = resource_path("questions.json")
+bundled_data_path = resource_path("questions.json")
 
-questions_dict = []
-try:
-    with open(json_file, "r") as file:
-        questions_dict = json.load(file)
-except Exception as e:
-    print(f"Failed to load questions.json: {e}")
-    
-    
+def initialize_user_data():
+    # If the file doesn't exist, create it and populate with data from questions.json
+    bundled_data_path = resource_path("questions.json")
+    if os.path.exists(bundled_data_path):
+        user_data_path = get_user_data_path()
+        with open(bundled_data_path, "r") as bundled_file, open(user_data_path, "w") as user_file:
+            data = json.load(bundled_file)
+            json.dump(data, user_file)
+        return data
+    else:
+       print("questions.json not found. Please ensure the file is in the correct location.")
+   
+def save_state(data):
+    user_data_path = get_user_data_path()
+    with open(user_data_path, 'w') as file:
+        json.dump(data, file)
+
+questions_dict = initialize_user_data()
+
+
 class QuizApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -42,10 +66,6 @@ class QuizApp(ctk.CTk):
         self.geometry(f"{self.width}x{self.height}+{self.padding//2}+{self.padding//2}")
         self.minsize(self.width, self.height)
                 
-        print("current_monitor:", self.current_monitor)
-        print("screen_scaling_factor:", self.screen_scaling_factor)
-        print("screen_width:", self.screen_width, "screen_height:", self.screen_height)
-
         # Initialize selected_certif to track the current selection
         self.selected_certif = None
         self.selected_answer = None
@@ -54,8 +74,8 @@ class QuizApp(ctk.CTk):
         
         # global variables
         self.test_color = False
-        self.test_question = True
-        self.question_picked = 112 # 124/457 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno
+        self.test_question = False
+        self.question_picked = 154 # 124/457/249 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno / bug 137 171 249 *187
         self.correct_answer_time = 50
         self.green = "#3EB20C" # Correctly selected
         self.dark_green = "#2B720C" # Correct but not selected
@@ -73,6 +93,11 @@ class QuizApp(ctk.CTk):
         
         # Initialize the main menu
         self.initialize_main_menu()
+        
+        if self.test_color is True or self.test_question is True:
+            print("current_monitor:", self.current_monitor)
+            print("screen_scaling_factor:", self.screen_scaling_factor)
+            print("screen_width:", self.screen_width, "screen_height:", self.screen_height)
         
         if self.test_color is True:
             self.use_test_color()
@@ -114,6 +139,7 @@ class QuizApp(ctk.CTk):
             self.answers_frame_height           = 102/1000  *self.screen_height*screen_scaling_factor
             self.second_answer_frame_height     = 102/1000  *self.screen_height*screen_scaling_factor
             self.answer_space                   = 110
+            self.second_answer_frame_space      = 50
             
             self.submission_space               = 160
             self.submission_frame_height        = 88/1000   *self.screen_height*screen_scaling_factor
@@ -266,7 +292,8 @@ class QuizApp(ctk.CTk):
         self.questions_df['Counter'] = 0
         # update question_count_label_height
         self.update_question_count_label(self.selected_certif)
-        pass
+        save_state(self.questions_df.to_dict('records'))
+        print("saved!")
     
     def get_available_questions(self):
         available_questions = self.questions_df[self.questions_df["Counter"] == 0]
@@ -280,13 +307,16 @@ class QuizApp(ctk.CTk):
         else:
             question_row = available_questions.sample(n=1).iloc[0]
         
-        #question_row = available_questions[available_questions["QuestionID"] == self.question_picked].iloc[0]
-        print("id:", question_row["QuestionID"])
-        print("counter:", question_row["Counter"])
-        print("certif:", question_row["CertifCode"])
-        print("type:", question_row["QuestionType"])
-        print("answer:", question_row["Answer"])
-        print("choices:", question_row["Choices"])
+        if self.test_question is True or self.test_color is True:
+            print("id:", question_row["QuestionID"])
+            print("counter:", question_row["Counter"])
+            print("certif:", question_row["CertifCode"])
+            print("type:", question_row["QuestionType"])
+            print("answer:", question_row["Answer"])
+            print("choices:", question_row["Choices"])
+        else:
+            print("id:", question_row["QuestionID"], "certif:", question_row["CertifCode"])
+       
         return question_row
     
     # Decrease counter for all questions that have been answered correctly previously
@@ -329,16 +359,10 @@ class QuizApp(ctk.CTk):
         # Determine the question type
         question_type = self.current_question['QuestionType']
 
-        if question_type == "multiplechoice":
-            print("question_type:", question_type)
-            print("choice:", choice)
-            print("selected_choices:", self.selected_choices)
-            
+        if question_type == "multiplechoice":            
             # Multiple selections allowed - simply add or remove choices
             self.update_choice_selection_and_appearance(choice)
             
-            print("selected_choices:", self.selected_choices)
-
         elif question_type == "yesno":
             # Single selection - deselect the other option when one is selected
             selected_key = next(iter(self.selected_choices)) if self.selected_choices else None
@@ -387,49 +411,61 @@ class QuizApp(ctk.CTk):
         self.submission_frame.winfo_children()[0].destroy()
         self.display_show_explanation_button()
         self.display_next_question_button()
+        
+    def correct_answer_drag_and_drop(self, string):
+        pairs = re.findall(r'[A-Za-z]\d', string)
+        pairs_set = set(pairs)
+        return pairs_set
 
     def check_drag_and_drop_answers(self):
-        correct_answers = self.current_question['Answer']
-        is_full_correct = True
-
+        correct_answers = self.correct_answer_drag_and_drop(self.current_question['Answer'])
+        created_pairs = {button.cget("text") for choice, button in self.choice_buttons.items() if choice.isdigit() and len(button.cget("text")) == 2}
+                
+        is_full_correct = created_pairs == correct_answers
+        
         for choice, button in self.choice_buttons.items():
-            if choice.isdigit():  # Check only digit choices for drag-and-drop
-                is_correct = button.cget("text") in correct_answers
+            if choice.isdigit():
+                button_value = button.cget("text")
+                is_correct = button_value in correct_answers and len(button_value) == 2
                 self.update_button_appearance_after_check_for_drag_and_drop(button, is_correct)
-                if not is_correct:
-                    is_full_correct = False
-
+        
         return is_full_correct
+
 
     def check_hotspot_answers(self):
         correct_answers = self.current_question['Answer']
-        is_full_correct = True
+        is_full_correct = True  # Assume true until a mismatch is found
+        
+        if len(self.selected_choices) != len(correct_answers):
+            is_full_correct = False
 
         for choice, button in self.choice_buttons.items():
             choice_id, choice_value = choice.split('_')
             answer_index = int(choice_id) - 1
-            is_selected = choice in self.selected_choices
+            is_selected = choice in self.selected_choices 
             is_correct = choice_value == correct_answers[answer_index]
             self.update_button_appearance_after_check(button, is_correct, is_selected)
-
-            if not is_correct and choice in self.selected_choices:
+    
+            # Update the overall correctness
+            if (not is_correct and is_selected):
                 is_full_correct = False
-
+            
         return is_full_correct
 
     def check_standard_answers(self):
-        correct_answers = self.current_question['Answer']
-        is_full_correct = True
+        correct_answers = set(self.current_question['Answer'])
+        selected_correct_answers = {choice for choice in self.selected_choices if choice in correct_answers}
+        selected_incorrect_answers = set(self.selected_choices) - correct_answers
+
+        is_full_correct = len(selected_correct_answers) == len(correct_answers) and not selected_incorrect_answers
 
         for choice, button in self.choice_buttons.items():
             is_selected = choice in self.selected_choices
             is_correct = choice in correct_answers
             self.update_button_appearance_after_check(button, is_correct, is_selected)
-
-            if not is_correct and choice in self.selected_choices or is_correct and choice not in self.selected_choices:
-                is_full_correct = False
-
+        
         return is_full_correct
+
     
     def update_button_appearance_after_check_for_drag_and_drop(self, button, is_correct):
         if is_correct:
@@ -455,6 +491,9 @@ class QuizApp(ctk.CTk):
             self.set_frame_color(self.green, question_type)
         else:
             self.set_frame_color(self.red, question_type)
+        
+        save_state(self.questions_df.to_dict('records'))
+        print("saved!")
 
     def set_frame_color(self, color, question_type):
         if question_type == "draganddrop":
@@ -474,7 +513,11 @@ class QuizApp(ctk.CTk):
         self.destroy_choice_buttons()
         self.destroy_submission_buttons()
         self.destroy_question_text()
-   
+        
+        # Remove the border color from the answers frame and the second answers frame
+        self.answers_frame.configure(border_width = 0, border_color = "black")
+        self.second_answer_frame.configure(border_width = 0, border_color = "black")
+        
         self.hide_main_answers_frame()
         self.hide_second_answers_frame()
          
@@ -705,9 +748,7 @@ class QuizApp(ctk.CTk):
     # DRAG AND DROP FUNCTIONS
     # ----------------------------------------------------------------------------------------------
     
-    def handle_drag_and_drop_choice(self, choice):
-        print("choice:", choice)
-        
+    def handle_drag_and_drop_choice(self, choice):       
         if choice.isalpha():
             self.process_alpha_choice(choice)
         else:
@@ -967,7 +1008,7 @@ class QuizApp(ctk.CTk):
         self.answers_frame.place_forget()
         
     def show_second_answers_frame(self):
-        self.second_answer_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answers_frame_height-self.answer_space, relx=0.5, anchor='n')
+        self.second_answer_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answers_frame_height+self.second_answer_frame_space, relx=0.5, anchor='n')
     
     def hide_second_answers_frame(self):
         self.second_answer_frame.place_forget()

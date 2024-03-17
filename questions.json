@@ -1361,13 +1361,13 @@
     },
     {
         "QuestionID": 137,
-        "Question": "A. Azure Functions\nB. Azure Logic Apps\n1. Executes code :\n2. Is always stateful :\n3. Runs only in the cloud :",
-        "Answer": "A1A2B3",
-        "Explanation": "Box 1: Azure Functions -\nAzure Functions allows you to implement your system's logic into readily available blocks of code called \"functions\". Different functions can run anytime you need to respond to critical events.\n\nBox 2: Azure Functions -\nAzure Logic Apps can have multiple stateful and stateless workflows.\n\nBox 3: Azure Logic Apps -\nAzure Logic Apps is a cloud-based platform for creating and running automated workflows that integrate your apps, data, services, and systems.",
+        "Question": "A. Azure Functions\nB. Azure Logic Apps\n1. Executes code and is always stateful\n2. Runs only in the cloud",
+        "Answer": "A1B2",
+        "Explanation": "Box 1: Azure Functions -\nAzure Functions allows you to implement your system's logic into readily available blocks of code called \"functions\". Different functions can run anytime you need to respond to critical events.\nAzure Logic Apps can have multiple stateful and stateless workflows.\n\nBox 2: Azure Logic Apps -\nAzure Logic Apps is a cloud-based platform for creating and running automated workflows that integrate your apps, data, services, and systems.",
         "Counter": 0,
         "CertifCode": "az-900",
         "QuestionType": "draganddrop",
-        "Choices": "AB123"
+        "Choices": "AB12"
     },
     {
         "QuestionID": 138,
@@ -1531,7 +1531,7 @@
     },
     {
         "QuestionID": 154,
-        "Question": "This question requires that you evaluate the underlined text to determine if it is correct.\nOne of the benefits of Azure SQL Data Warehouse is that high availability is built into the platform.\nInstructions: Review the underlined text. If it makes the statement correct, select `No change is needed`. If the statement is incorrect, select the answer choice that makes the statement correct.A. No change is needed\nB. automatic scaling\nC. data compression\nD. versioning",
+        "Question": "This question requires that you evaluate the underlined text to determine if it is correct.\nOne of the benefits of Azure SQL Data Warehouse is that high availability is built into the platform.\nInstructions: Review the underlined text. If it makes the statement correct, select `No change is needed`. If the statement is incorrect, select the answer choice that makes the statement correct.\nA. No change is needed\nB. automatic scaling\nC. data compression\nD. versioning",
         "Answer": "A",
         "Explanation": "Azure Data Warehouse (now known as Azure Synapse Analytics) is a PaaS offering from Microsoft. As with all PaaS services from Microsoft, SQL Data\nWarehouse offers an availability SLA of 99.9%. Microsoft can offer 99.9% availability because it has high availability features built into the platform.\nReferences:",
         "Counter": 0,
@@ -1701,13 +1701,13 @@
     },
     {
         "QuestionID": 171,
-        "Question": "You need to identify which blades in the Azure portal must be used to perform the following tasks:\n- View security recommendations.\n- Monitor the health of Azure services.\n- Browse available virtual machine images.\nWhich blade should you identify for each task?\n\nA. Monitor the health of Azure services.\nB. Browse available VM images.\nC. View security recommandations.\n1. Monitor\n2. Subscriptions\n3. Marketplace\n4. Advisor",
-        "Answer": "A1B3C4",
+        "Question": "You need to identify which blades in the Azure portal must be used to perform the following tasks:\n- View security recommendations.\n- Monitor the health of Azure services.\n- Browse available virtual machine images.\nWhich blade should you identify for each task?\n\nA. Monitor\nB. Subscriptions\nC. Marketplace\nD. Advisor\n1. Monitor the health of Azure services.\n2. Browse available VM images.\n3. View security recommandations.",
+        "Answer": "A1C2D3",
         "Explanation": "Box 1:\nAzure Monitor is used to monitor the health of Azure services.\nAzure Monitor maximizes the availability and performance of your applications and services by delivering a comprehensive solution for collecting, analyzing, and acting on telemetry from your cloud and on-premises environments. It helps you understand how your applications are performing and proactively identifies issues affecting them and the resources they depend on.\nBox 2:\nYou can browse available virtual machine images in the Azure Marketplace.\nAzure Marketplace provides access and information on solutions and services available from Microsoft and their partners. Customers can discover, try, or buy cloud software solutions built on or for Azure. The catalog of 8,000+ listings provides Azure building blocks, such as Virtual Machines (VMs), APIs, Azure apps,\nSolution Templates and managed applications, SaaS apps, containers, and consulting services.\nBox 3.\nAzure Advisor displays security recommendations.\nAzure Advisor provides you with a consistent, consolidated view of recommendations for all your Azure resources. It integrates with Azure Security Center to bring you security recommendations. You can get security recommendations from the Security tab on the Advisor dashboard.\nSecurity Center helps you prevent, detect, and respond to threats with increased visibility into and control over the security of your Azure resources. It periodically analyzes the security state of your Azure resources. When Security Center identifies potential security vulnerabilities, it creates recommendations. The recommendations guide you through the process of configuring the controls you need.",
         "Counter": 0,
         "CertifCode": "az-900",
         "QuestionType": "draganddrop",
-        "Choices": "ABC1234"
+        "Choices": "ABCD123"
     },
     {
         "QuestionID": 172,
@@ -1861,13 +1861,13 @@
     },
     {
         "QuestionID": 187,
-        "Question": "Several support engineers plan to manage Azure by using the computers shown in the following table.\nYou need to identify which Azure management tools can be used from each computer.\nWhat should you identify for each computer? To answer, select the appropriate options in the answer area.\nA. Computer1 : Windows 10\nB. Computer2: Ubuntu\nC. Computer3: MacOS Mojave\n1. The Azure CLI and the Azure portal\n2. The Azure portal and Azure Powershell\n3. The Azure CLI and Azure Powershell\n4. The Azure CLI, the Azure portal and Azure Powershell\n\n",
-        "Answer": "A4B4C4",
+        "Question": "Several support engineers plan to manage Azure by using the computers shown in the following table.\nYou need to identify which Azure management tools can be used from each computer.\nWhat should you identify for each computer? To answer, select the appropriate options in the answer area.\n- Computer1 : Windows 10\n- Computer2: Ubuntu\n- Computer3: MacOS Mojave\nA. The Azure CLI and the Azure portal\nB. The Azure portal and Azure Powershell\nC. The Azure CLI and Azure Powershell\nD. The Azure CLI, the Azure portal and Azure Powershell\n\n",
+        "Answer": "D",
         "Explanation": "Previously, the Azure CLI (or x-plat CLI) was the only option for managing Azure subscriptions and resources from the command-line on Linux and macOS. Now with the open source and cross-platform release of PowerShell, you'll be able to manage all your Azure resources from Windows, Linux and macOS using your tool of choice, either the Azure CLI or Azure PowerShell cmdlets.\nThe Azure portal runs in a web browser so can be used in either operating system.",
         "Counter": 0,
         "CertifCode": "az-900",
-        "QuestionType": "draganddrop",
-        "Choices": "ABC1234"
+        "QuestionType": "multiplechoice",
+        "Choices": "ABCD"
     },
     {
         "QuestionID": 188,
@@ -2481,13 +2481,13 @@
     },
     {
         "QuestionID": 249,
-        "Question": "You plan to implement several security services for an Azure environment. You need to identify which Azure services must be used to meet the following security requirements:\n- Monitor threats by using sensors\n- Enforce Azure Multi-Factor Authentication (MFA) based on a condition\nWhich Azure service should you identify for each requirement? To answer, select the appropriate options in the answer area.\n\nMonitor threats by using sensors:\nA. Azure Monitor\nB. Azure Security Center\nC. Azure Active Directory (Azure AD) Identity Protection\nD. Azure Advanced Threat Protection (ATP)\n\nEnforce Azure MFA based on a condition:\nA. Azure Monitor\nB. Azure Security Center\nC. Azure Active Directory (Azure AD) Identity Protection\nD. Azure Advanced Threat Protection (ATP)",
-        "Answer": "DC",
+        "Question": "You plan to implement several security services for an Azure environment. You need to identify which Azure services must be used to meet the following security requirements:\n- Monitor threats by using sensors\n- Enforce Azure Multi-Factor Authentication (MFA) based on a condition\nWhich Azure service should you identify for each requirement? To answer, select the appropriate options in the answer area.\n\nA. Azure Monitor\nB. Azure Security Center\nC. Azure Active Directory (Azure AD) Identity Protection\nD. Azure Advanced Threat Protection (ATP)\n1. Monitor threats by using sensors\n2. Enforce Azure MFA based on a condition\n",
+        "Answer": "C2D1",
         "Explanation": "Box 1:\nTo monitor threats by using sensors, you would use Azure Advanced Threat Protection (ATP).\nAzure Advanced Threat Protection (ATP) is a cloud-based security solution that leverages your on-premises Active Directory signals to identify, detect, and investigate advanced threats, compromised identities, and malicious insider actions directed at your organization.\nSensors are software packages you install on your servers to upload information to Azure ATP.\nBox 2:\nTo enforce MFA based on a condition, you would use Azure Active Directory Identity Protection.\nAzure AD Identity Protection helps you manage the roll-out of Azure Multi-Factor Authentication (MFA) registration by configuring a Conditional Access policy to require MFA registration no matter what modern authentication app you are signing in to.",
         "Counter": 0,
         "CertifCode": "az-900",
-        "QuestionType": "multiplechoice",
-        "Choices": "ABCDABCD"
+        "QuestionType": "draganddrop",
+        "Choices": "ABCD12"
     },
     {
         "QuestionID": 250,
