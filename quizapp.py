@@ -2,16 +2,16 @@ import tkinter as tk
 from tkinter import messagebox, Toplevel, filedialog, font
 import customtkinter as ctk
 import pandas as pd
+from screeninfo import get_monitors
 import json
 import os
 import sys
-
+import ctypes
 
 def resource_path(relative_path):
     """Get the absolute path to the resource, works for development and for PyInstaller"""
     base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
-
 
 json_file = resource_path("questions.json")
 
@@ -21,97 +21,180 @@ try:
         questions_dict = json.load(file)
 except Exception as e:
     print(f"Failed to load questions.json: {e}")
-
-
+    
+    
 class QuizApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
         self.title("Quiz App")
         
+        self.current_monitor = self.get_current_monitor()  
+        self.screen_scaling_factor =  self.get_screen_scaling_factor()
+        self.screen_width, self.screen_height = self.get_actual_screen_dimensions()
+  
+        # height of frame and widgets
+        self.initialize_widgets_height(self.screen_width, self.screen_height, self.screen_scaling_factor)
+        
+        # Screen dimensions and window sizing
+        self.width = self.screen_width - self.padding
+        self.height = self.screen_height - self.padding
+        self.geometry(f"{self.width}x{self.height}+{self.padding//2}+{self.padding//2}")
+        self.minsize(self.width, self.height)
+                
+        print("current_monitor:", self.current_monitor)
+        print("screen_scaling_factor:", self.screen_scaling_factor)
+        print("screen_width:", self.screen_width, "screen_height:", self.screen_height)
+
         # Initialize selected_certif to track the current selection
         self.selected_certif = None
         self.selected_answer = None
-        self.main_menu_frame_height = 350
-        self.questions_frame_height = 350
-        self.answers_frame_height = 175
         self.font = "Made Tommy"
         self.font_lisible = "Consola Mono"
-                        
-        # Screen dimensions and window sizing
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        padding = 180
-        self.width = screen_width - padding
-        self.height = screen_height - padding
-        self.geometry(f"{self.width}x{self.height}+{padding // 2}+{padding // 2}")
-        self.minsize(self.width, self.height)
-        print("width:", self.width, "height:", self.height)
         
         # global variables
+        self.test_color = False
+        self.test_question = True
+        self.question_picked = 112 # 124/457 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno
         self.correct_answer_time = 50
         self.green = "#3EB20C" # Correctly selected
         self.dark_green = "#2B720C" # Correct but not selected
         self.red = "#ff4444" # Incorrectly selected
-     
+        self.dark_grey = "#151515"
+        self.light_grey = "#303030"
+        self.white_grey = "#E7E7E7"
+        self.hover_grey = "#505050"
+        self.mid_grey = "#202020"
+        self.pink = "#ff9898"
+        self.dark_pink = "#ff59c7"
+    
         # DataFrame for questions
         self.questions_df = pd.DataFrame(questions_dict)
         
         # Initialize the main menu
         self.initialize_main_menu()
         
+        if self.test_color is True:
+            self.use_test_color()
+
+    def get_current_monitor(self):
+        # Get the current position of the window
+        window_x = self.winfo_x()
+        window_y = self.winfo_y()
+        for m in get_monitors():
+            if m.x <= window_x <= m.x + m.width and m.y <= window_y <= m.y + m.height:
+                return m  # This is the monitor where the window is located
+        return None  # In case the window is not found in any monitor bounds
+    
+    # Screen dimension
+    def get_actual_screen_dimensions(self):
+        actual_screen_width, actual_screen_height = self.get_current_monitor().width, self.get_current_monitor().height
+        return actual_screen_width, actual_screen_height
+
+    # Screen scaling factor
+    def get_screen_scaling_factor(self):
+        scaling_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+        return scaling_factor
+    
+    def initialize_widgets_height(self, screen_width, screen_height, screen_scaling_factor):
+        if screen_width == 1920 and screen_height == 1080:
+            self.main_menu_frame_height         = 225/1000  *self.screen_height*screen_scaling_factor
+            self.header_height                  = 58/1000   *self.screen_height*screen_scaling_factor
+            self.certif_select_combobox_height  = 29/1000   *self.screen_height*screen_scaling_factor
+            self.certif_select_label_height     = 44/1000   *self.screen_height*screen_scaling_factor
+            self.question_count_label_height    = 44/1000   *self.screen_height*screen_scaling_factor
+            
+            self.start_and_reset_frame_height   = 68/1000   *self.screen_height*screen_scaling_factor
+            self.start_button_height            = 58/1000   *self.screen_height*screen_scaling_factor
+            
+            self.question_space                 = 15    
+            self.questions_frame_height         = 235/1000  *self.screen_height*screen_scaling_factor
+            self.questions_text_height          = 235/1000  *self.screen_height*screen_scaling_factor
+            
+            self.answers_frame_height           = 102/1000  *self.screen_height*screen_scaling_factor
+            self.second_answer_frame_height     = 102/1000  *self.screen_height*screen_scaling_factor
+            self.answer_space                   = 110
+            
+            self.submission_space               = 160
+            self.submission_frame_height        = 88/1000   *self.screen_height*screen_scaling_factor
+            self.stop_button_height             = 58/1000   *self.screen_height*screen_scaling_factor
+            self.submission_button_height       = 58/1000   *self.screen_height*screen_scaling_factor
+                        
+            self.padding = 180
+    
+    
     def adjust_widget_sizes(self, event):
-        # Adjust the width of frames to match the app's width
+        # Adjust the width of frames to match the app's size
         current_width = self.winfo_width()
         current_height = self.winfo_height()
+        
         self.main_menu_frame.place_configure(
             width=current_width, 
             height=current_height)
+        self.start_and_reset_frame.place_configure(
+            height=self.start_and_reset_frame_height)
         self.questions_frame.place_configure(
             width=current_width, 
             height=current_height - self.main_menu_frame_height)
+        self.submission_frame.place_configure(
+            height=self.submission_frame_height)
         self.header.configure(
             width=current_width)
         self.certif_select_label.configure(
             width=current_width)
         self.question_count_label.configure(
             width=current_width)
-            
+       
     def initialize_main_menu_frame(self):
         # Main Menu Frame
         self.main_menu_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.main_menu_frame_height)
         self.main_menu_frame.place(x=0, y=0)
         self.main_menu_frame.configure(
-            fg_color="#151515")
+            fg_color=self.dark_grey)
+    
+    def initialize_start_and_reset_frame(self):
+        # Questions Frame
+        self.start_and_reset_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.start_and_reset_frame_height)
+        self.start_and_reset_frame.place(x=0, y=self.main_menu_frame_height, relx=0.5, anchor='n')
+        self.start_and_reset_frame.configure(
+            fg_color=self.dark_grey,
+            bg_color=self.dark_grey)
     
     def initialize_main_questions_frame(self):
         # Questions Frame
         self.questions_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.questions_frame_height)
-        self.questions_frame.place(x=0, y=self.main_menu_frame_height)
+        self.questions_frame.place(x=0, y=self.main_menu_frame_height+self.start_and_reset_frame_height+self.question_space)
         self.questions_frame.configure(
-            fg_color="#151515")
+            fg_color=self.dark_grey)
     
     def initialize_main_answers_frame(self):
         # Questions Frame
-        self.answers_frame = ctk.CTkFrame(self, width=1000, height=self.answers_frame_height)
-        self.answers_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height, relx=0.5, anchor='n')
+        self.answers_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.answers_frame_height)
         self.answers_frame.configure(
-            fg_color="#151515", 
-            bg_color="#151515")
+            fg_color=self.light_grey,
+            bg_color=self.dark_grey)
     
+    def initialize_second_answers_frame(self):
+        # Questions Frame
+        self.second_answer_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.second_answer_frame_height)
+        self.second_answer_frame.configure(
+            fg_color=self.light_grey,
+            bg_color=self.dark_grey)
+             
     def initialize_main_submission_frame(self):
         # Questions Frame
-        self.submission_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=150)
-        self.submission_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answers_frame_height, relx=0.5, anchor='n')
+        self.submission_frame = ctk.CTkFrame(self, width=self.winfo_width(), height=self.submission_frame_height)
+        self.submission_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answers_frame_height+self.submission_space, relx=0.5, anchor='n')
         self.submission_frame.configure(
-            fg_color="#151515", 
-            bg_color="#151515")
+            fg_color=self.dark_grey,
+            bg_color=self.dark_grey)
 
     def initialize_main_menu(self):
-        
         self.initialize_main_menu_frame()
+        self.initialize_start_and_reset_frame()
         self.initialize_main_questions_frame()
         self.initialize_main_answers_frame()
+        self.initialize_second_answers_frame()
         self.initialize_main_submission_frame()
         
         self.display_header()
@@ -119,11 +202,25 @@ class QuizApp(ctk.CTk):
         self.display_certif_combobox()
         self.display_question_count_label()
         self.display_start_button()
-                       
+        self.display_reset_button()
+                           
         # To ensure the frame adjusts its width when the window is resized:
         self.bind("<Configure>", self.adjust_widget_sizes)
-        # self.print_total_height_widgets_in_frame(self.main_menu_frame, "main_menu_frame")
-        
+    
+    def use_test_color(self):
+        self.main_menu_frame.configure(
+            fg_color="red")
+        self.start_and_reset_frame.configure(
+            fg_color="orange")
+        self.questions_frame.configure(
+            fg_color="blue")
+        self.answers_frame.configure(
+            fg_color="green")
+        self.second_answer_frame.configure(
+            fg_color="pink")
+        self.submission_frame.configure(
+            fg_color="yellow")
+    
     def count_questions_certif(self, choice):
         question_count = self.questions_df[self.questions_df['CertifCode'].str.upper() == choice]['QuestionID'].nunique()
         return question_count
@@ -140,11 +237,13 @@ class QuizApp(ctk.CTk):
         self.selected_certif = choice
         self.question_count_label.configure(
             text=self.update_question_count_label(choice))
-        self.start_button.configure(
-            fg_color="#E7E7E7", 
-            bg_color="transparent",
-            hover_color="#ff9898",
-            state="normal",)
+        self.enable_start_button()
+        self.enable_reset_button()
+        
+        
+    # ----------------------------------------------------------------------------------------------
+    # START QUIZ
+    # ----------------------------------------------------------------------------------------------
     
     def load_certifications_code(self):
         certif_codes = self.questions_df['CertifCode'].str.upper().unique().tolist()
@@ -157,12 +256,17 @@ class QuizApp(ctk.CTk):
         else:
             # Proceed with the action for the button since a certification has been selected
             self.questions_df = self.questions_df[self.questions_df["CertifCode"].str.upper() == self.selected_certif]
-            self.display_question_text()
-            self.answers_frame.configure(
-                fg_color="#303030")
+            self.display_question_text()        
             self.ask_question()
             self.disable_certif_combobox()
             self.disable_start_button()
+    
+    def reset_questions(self):
+        # reset all counter to 0
+        self.questions_df['Counter'] = 0
+        # update question_count_label_height
+        self.update_question_count_label(self.selected_certif)
+        pass
     
     def get_available_questions(self):
         available_questions = self.questions_df[self.questions_df["Counter"] == 0]
@@ -170,14 +274,19 @@ class QuizApp(ctk.CTk):
     
     def pick_random_questions(self, available_questions):
         # pick a question from the list of questions randomly
-        # question_row = available_questions.sample(n=1).iloc[0]
         
-        question_row = available_questions[available_questions["QuestionID"] == 457].iloc[0]
+        if self.test_question is True:
+            question_row = available_questions[available_questions["QuestionID"] == self.question_picked].iloc[0]
+        else:
+            question_row = available_questions.sample(n=1).iloc[0]
+        
+        #question_row = available_questions[available_questions["QuestionID"] == self.question_picked].iloc[0]
         print("id:", question_row["QuestionID"])
         print("counter:", question_row["Counter"])
         print("certif:", question_row["CertifCode"])
         print("type:", question_row["QuestionType"])
         print("answer:", question_row["Answer"])
+        print("choices:", question_row["Choices"])
         return question_row
     
     # Decrease counter for all questions that have been answered correctly previously
@@ -198,10 +307,16 @@ class QuizApp(ctk.CTk):
         self.question_type = self.question_row['QuestionType']
         self.current_question = self.question_row  # Update current_question for consistency in other methods
 
+        if self.question_type == 'draganddrop':
+            self.show_main_answers_frame()
+            self.show_second_answers_frame() 
+        else:
+            self.show_main_answers_frame()
+            self.hide_second_answers_frame() 
+
         # Update the method calls to use the newly assigned question_row and question_type
         self.display_question_type(self.question_type)
-
-               
+      
     def insert_question_text(self):    
         self.questions_display.configure(
             state="normal")  # Temporarily enable the widget to insert text
@@ -215,34 +330,23 @@ class QuizApp(ctk.CTk):
         question_type = self.current_question['QuestionType']
 
         if question_type == "multiplechoice":
+            print("question_type:", question_type)
+            print("choice:", choice)
+            print("selected_choices:", self.selected_choices)
+            
             # Multiple selections allowed - simply add or remove choices
-            if choice in self.selected_choices:
-                self.selected_choices.remove(choice)
-                self.choice_buttons[choice].configure(
-                    fg_color="#202020", 
-                    text_color="white", 
-                    hover_color="#505050")
-            else:
-                self.selected_choices.add(choice)
-                self.choice_buttons[choice].configure(
-                    fg_color="#ff9898", 
-                    text_color="black", 
-                    hover_color="#ff9898")
+            self.update_choice_selection_and_appearance(choice)
+            
+            print("selected_choices:", self.selected_choices)
 
         elif question_type == "yesno":
             # Single selection - deselect the other option when one is selected
             selected_key = next(iter(self.selected_choices)) if self.selected_choices else None
             if selected_key:
-                self.choice_buttons[selected_key].configure(
-                    fg_color="#202020", 
-                    text_color="white", 
-                    hover_color="#505050")
-                self.selected_choices.clear()
+                self.selected_choices.remove(selected_key)
+                self.reset_button_appearance(selected_key)
             self.selected_choices.add(choice)
-            self.choice_buttons[choice].configure(
-                fg_color="#ff9898", 
-                text_color="black", 
-                hover_color="#ff9898")
+            self.highlight_button_appearance(choice)
 
         elif question_type == "hotspot":
             # Identify the sub-question index from the choice identifier
@@ -253,86 +357,115 @@ class QuizApp(ctk.CTk):
                 if selected_choice.startswith(sub_question_index + '_'):
                     # Deselect the previous choice for this sub-question
                     self.selected_choices.remove(selected_choice)
-                    self.choice_buttons[selected_choice].configure(
-                        fg_color="#202020", 
-                        text_color="white", 
-                        hover_color="#505050")
+                    self.reset_button_appearance(selected_choice)
+            self.selected_choices.add(choice)
+            self.highlight_button_appearance(choice)
         
-        # Now select the new choice
-        self.selected_choices.add(choice)
-        self.choice_buttons[choice].configure(
-            fg_color="#ff9898", 
-            text_color="black", 
-            hover_color="#ff9898")
-   
+        elif question_type == "draganddrop":
+            self.handle_drag_and_drop_choice(choice)
+                
+            
+    # ----------------------------------------------------------------------------------------------
+    # CHECK ANSWERS
+    # ----------------------------------------------------------------------------------------------
+        
     def check_and_update_choices(self):
-        correct_answers = self.current_question['Answer']
+        self.cleanup_before_checking_answers()
         question_type = self.current_question['QuestionType']
-        is_full_correct = True  # Assume the answer is fully correct until proven otherwise
-        
-        # Remove the submit button
+
+        if question_type == "draganddrop":
+            is_full_correct = self.check_drag_and_drop_answers()
+        elif question_type == "hotspot":
+            is_full_correct = self.check_hotspot_answers()
+        else:
+            is_full_correct = self.check_standard_answers()
+
+        self.finalize_answer_check(is_full_correct, question_type)
+
+    def cleanup_before_checking_answers(self):
+        # Remove the submit button and display the next question and explanation buttons
         self.submission_frame.winfo_children()[0].destroy()
-        
-        # Display the next question button and the explanation button
         self.display_show_explanation_button()
         self.display_next_question_button()
 
+    def check_drag_and_drop_answers(self):
+        correct_answers = self.current_question['Answer']
+        is_full_correct = True
+
         for choice, button in self.choice_buttons.items():
-            button.configure(
-                state='disabled')  # Disable all buttons first.
+            if choice.isdigit():  # Check only digit choices for drag-and-drop
+                is_correct = button.cget("text") in correct_answers
+                self.update_button_appearance_after_check_for_drag_and_drop(button, is_correct)
+                if not is_correct:
+                    is_full_correct = False
 
-            if question_type == "hotspot":
-                # Hotspot questions: Compare each sub-question's choice with the corresponding correct answer.
-                choice_id, choice_value = choice.split('_')  # Splitting '1_Y' into ['1', 'Y']
-                answer_index = int(choice_id) - 1  # Adjusting index to align with correct_answers (assuming it's 0-indexed)
+        return is_full_correct
 
-                is_correct = (choice_value == correct_answers[answer_index])
-                
-                if not is_correct and choice in self.selected_choices:
-                    is_full_correct = False
-                elif is_correct and choice not in self.selected_choices:
-                    is_full_correct = False
-            else:
-                # For non-hotspot questions, check if the choice is in the list/set of correct answers.
-                is_correct = choice in correct_answers
-                
-                if not is_correct and choice in self.selected_choices:
-                    is_full_correct = False
-                elif is_correct and choice not in self.selected_choices:
-                    is_full_correct = False
-                        
-            # Now, determine the color based on correctness and selection.
-            if is_correct and choice in self.selected_choices:
-                button.configure(
-                    fg_color="#3EB20C", 
-                    text_color="white", 
-                    text_color_disabled="white")  # Correctly selected.
-            elif not is_correct and choice in self.selected_choices:
-                button.configure(
-                    fg_color="#ff4444", 
-                    text_color="white", 
-                    text_color_disabled="white")  # Incorrectly selected.
-            elif is_correct:
-                button.configure(
-                    fg_color="#2B720C", 
-                    text_color="white", 
-                    text_color_disabled="white")  # Correct but not selected.
-            else:
-                button.configure(
-                    fg_color="#202020", 
-                    text_color="white", 
-                    text_color_disabled="white")  # Default for non-selected/non-relevant.
-        
+    def check_hotspot_answers(self):
+        correct_answers = self.current_question['Answer']
+        is_full_correct = True
+
+        for choice, button in self.choice_buttons.items():
+            choice_id, choice_value = choice.split('_')
+            answer_index = int(choice_id) - 1
+            is_selected = choice in self.selected_choices
+            is_correct = choice_value == correct_answers[answer_index]
+            self.update_button_appearance_after_check(button, is_correct, is_selected)
+
+            if not is_correct and choice in self.selected_choices:
+                is_full_correct = False
+
+        return is_full_correct
+
+    def check_standard_answers(self):
+        correct_answers = self.current_question['Answer']
+        is_full_correct = True
+
+        for choice, button in self.choice_buttons.items():
+            is_selected = choice in self.selected_choices
+            is_correct = choice in correct_answers
+            self.update_button_appearance_after_check(button, is_correct, is_selected)
+
+            if not is_correct and choice in self.selected_choices or is_correct and choice not in self.selected_choices:
+                is_full_correct = False
+
+        return is_full_correct
+    
+    def update_button_appearance_after_check_for_drag_and_drop(self, button, is_correct):
+        if is_correct:
+            button.configure(fg_color=self.green, text_color="white", text_color_disabled="white")
+        else:
+            button.configure(fg_color=self.red, text_color="white", text_color_disabled="white")
+
+
+    def update_button_appearance_after_check(self, button, is_correct, is_selected):
+        if is_correct and is_selected:
+            button.configure(fg_color=self.green, text_color="white", text_color_disabled="white")
+        elif is_correct and not is_selected:
+            button.configure(fg_color=self.dark_green, text_color="white", text_color_disabled="white")
+        elif not is_correct and is_selected:
+            button.configure(fg_color=self.red, text_color="white", text_color_disabled="white")
+        else:
+            button.configure(fg_color=self.mid_grey, text_color="white", text_color_disabled="white")
+
+    def finalize_answer_check(self, is_full_correct, question_type):
         if is_full_correct:
-            # in question_df, update the counter for the question by adding the correct_answer_time
             self.questions_df.loc[self.questions_df['QuestionID'] == self.current_question['QuestionID'], 'Counter'] += self.correct_answer_time
             self.update_question_count_label(self.selected_certif)
-            print(self.count_correct_answers_certif(self.selected_certif))
-                
-            self.answers_frame.configure(border_width = 2, border_color = self.green) # Green border for correct answers
+            self.set_frame_color(self.green, question_type)
         else:
-            self.answers_frame.configure(border_width = 2, border_color = self.red) # Red border for incorrect answers
+            self.set_frame_color(self.red, question_type)
+
+    def set_frame_color(self, color, question_type):
+        if question_type == "draganddrop":
+            self.second_answer_frame.configure(border_width=2, border_color=color)
+        else:
+            self.answers_frame.configure(border_width=2, border_color=color)
             
+
+    # ----------------------------------------------------------------------------------------------
+    # STOP QUIZ OR MOVE TO NEXT QUESTION
+    # ----------------------------------------------------------------------------------------------     
     
     def stop_quiz(self):
         self.clear_questions_display()
@@ -341,9 +474,9 @@ class QuizApp(ctk.CTk):
         self.destroy_choice_buttons()
         self.destroy_submission_buttons()
         self.destroy_question_text()
-        
-        self.answers_frame.configure(
-            fg_color="#151515")
+   
+        self.hide_main_answers_frame()
+        self.hide_second_answers_frame()
          
         # Reset the selected choices
         self.selected_choices = set()
@@ -352,7 +485,6 @@ class QuizApp(ctk.CTk):
             text="NUMBER OF QUESTIONS: -")
         
         self.enable_certif_combobox()
-        self.enable_start_button()
     
     def next_question(self):
         self.clear_questions_display()
@@ -361,12 +493,13 @@ class QuizApp(ctk.CTk):
         self.destroy_explanation_window()
         self.destroy_choice_buttons()
         self.destroy_submission_buttons()
-         
+     
         # Reset the selected choices
         self.selected_choices = set()
         
-        # Remove the border color from the answers frame
+        # Remove the border color from the answers frame and the second answers frame
         self.answers_frame.configure(border_width = 0, border_color = "black")
+        self.second_answer_frame.configure(border_width = 0, border_color = "black")
         
         # Move to the next question
         self.ask_question()
@@ -393,7 +526,7 @@ class QuizApp(ctk.CTk):
         explanation_label.pack(padx=20, pady=20)  # Internal padding for the label
         explanation_label.configure(
             fg_color="#151515", 
-            text_color="#ff9898", 
+            text_color=self.pink, 
             font=(self.font_lisible, 16),
             justify="left")
         
@@ -459,6 +592,10 @@ class QuizApp(ctk.CTk):
         # Starting row for choices
         choice_row = 1
         choice_column = 0
+        max_columns = 5
+        
+        if len(self.current_question['Choices']) > 5:
+            max_columns = 7
 
         for index, choice in enumerate(self.current_question['Choices']):
             choice_button = ctk.CTkButton(
@@ -467,12 +604,12 @@ class QuizApp(ctk.CTk):
                 command=lambda choice=choice: self.toggle_choice(choice),
                 font=(self.font, 20, "bold"),
                 text_color="white",
-                fg_color="#202020",
+                fg_color=self.mid_grey,
                 bg_color="transparent",
-                hover_color="#505050",
+                hover_color=self.hover_grey,
                 corner_radius=30)
             # Place the button in the grid
-            if index % 5 == 0:
+            if index % max_columns == 0:
                 choice_row += 1
                 choice_column = 0
             choice_button.grid(row=choice_row, column=choice_column, padx=8, pady=8, sticky="nsew")
@@ -489,9 +626,9 @@ class QuizApp(ctk.CTk):
             text="Yes",
             font=(self.font, 20, "bold"),
             text_color="white",
-            fg_color="#202020",
+            fg_color=self.mid_grey,
             bg_color="transparent",
-            hover_color="#505050",
+            hover_color=self.hover_grey,
             corner_radius=30,
             command=lambda: self.toggle_choice("A"))
         yes_button.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
@@ -502,9 +639,9 @@ class QuizApp(ctk.CTk):
             text="No",
             font=(self.font, 20, "bold"),
             text_color="white",
-            fg_color="#202020",
+            fg_color=self.mid_grey,
             bg_color="transparent",
-            hover_color="#505050",
+            hover_color=self.hover_grey,
             corner_radius=30,
             command=lambda: self.toggle_choice("B"))
         no_button.grid(row=1, column=1, padx=8, pady=8, sticky="nsew")
@@ -521,57 +658,138 @@ class QuizApp(ctk.CTk):
                     command=lambda c=choice_id: self.toggle_choice(c),
                     font=(self.font, 20, "bold"),
                     text_color="white",
-                    fg_color="#202020",
-                    hover_color="#505050",
+                    fg_color=self.mid_grey,
+                    hover_color=self.hover_grey,
                     corner_radius=30)
                 button.grid(row=choice_row, column=choice_index, padx=8, pady=8, sticky="nsew")
                 self.choice_buttons[choice_id] = button
             choice_row += 1
-    
+            
     def set_answer_for_draganddrop(self):
-        # Assume all choices are pairs and are provided in order like A, 1, B, 2, C, 3...
-        num_pairs = len(self.current_question['Choices']) // 2  # Determine the number of pairs
         letter_row = 1
         number_row = 2
-
-        # Reset choice_column for every new pair
-        for pair_index in range(num_pairs):
-            letter_choice = self.current_question['Choices'][pair_index * 2]  # Assuming even indexes are letters
-            number_choice = self.current_question['Choices'][pair_index * 2 + 1]  # Assuming odd indexes are numbers
-
-            # Create button for letter choice
+        
+        letter_choices, number_choices = self.separate_letter_number(self.current_question['Choices'])
+        
+        # for each letter, create a button
+        for index, choice in enumerate(letter_choices):
             letter_button = ctk.CTkButton(
-                self.answers_frame,
-                text=letter_choice,
-                command=lambda choice=letter_choice: self.toggle_choice(choice),
-                font=(self.font, 20, "bold"),
-                text_color="white",
-                fg_color="#202020",
-                bg_color="transparent",
-                hover_color="#505050",
-                corner_radius=30)
-            letter_button.grid(row=letter_row, column=pair_index, padx=8, pady=8, sticky="nsew")
-            self.choice_buttons[letter_choice] = letter_button
-
-            # Create button for number choice
+                    self.answers_frame,
+                    text=choice,
+                    command=lambda choice=choice: self.toggle_choice(choice),
+                    font=(self.font, 20, "bold"),
+                    text_color="white",
+                    fg_color=self.mid_grey,
+                    bg_color="transparent",
+                    hover_color=self.hover_grey,
+                    corner_radius=30)
+            letter_button.grid(row=letter_row, column=index, padx=8, pady=8, sticky="nsew")
+            self.choice_buttons[choice] = letter_button  # Store button with choice as the key
+            
+        # for each number, create a button
+        for index, choice in enumerate(number_choices):
             number_button = ctk.CTkButton(
-                self.answers_frame,
-                text=number_choice,
-                command=lambda choice=number_choice: self.toggle_choice(choice),
+                self.second_answer_frame,
+                text=choice,
+                command=lambda choice=choice: self.toggle_choice(choice),
                 font=(self.font, 20, "bold"),
                 text_color="white",
-                fg_color="#202020",
+                fg_color=self.mid_grey,
                 bg_color="transparent",
-                hover_color="#505050",
+                hover_color=self.hover_grey,
                 corner_radius=30)
-            number_button.grid(row=number_row, column=pair_index, padx=8, pady=8, sticky="nsew")
-            self.choice_buttons[number_choice] = number_button
-
-        # Configure the grid columns to distribute space evenly
-        for col_index in range(num_pairs):
-            self.questions_frame.grid_columnconfigure(col_index, weight=1)
-
+            number_button.grid(row=number_row, column=index, padx=8, pady=8, sticky="nsew")
+            self.choice_buttons[choice] = number_button  # Store button with choice as the key
+            
+    # ----------------------------------------------------------------------------------------------
+    # DRAG AND DROP FUNCTIONS
+    # ----------------------------------------------------------------------------------------------
     
+    def handle_drag_and_drop_choice(self, choice):
+        print("choice:", choice)
+        
+        if choice.isalpha():
+            self.process_alpha_choice(choice)
+        else:
+            self.process_digit_choice(choice)
+
+        # Check if we have one letter and one number selected to form a pair.
+        if len(self.selected_choices) == 2:
+            self.form_and_display_pair()
+
+    def process_alpha_choice(self, choice):
+        self.update_drag_and_drop_choice(choice, is_alpha=True)
+
+    def process_digit_choice(self, choice):
+        self.update_drag_and_drop_choice(choice, is_alpha=False)
+
+    def update_drag_and_drop_choice(self, choice, is_alpha):
+        # Extract letters and digits for further processing.
+        letter_choices, digit_choices = self.extract_letters_and_digits_from_selected()
+        
+        # If the choice is already selected, deselect it.
+        if choice in self.selected_choices:
+            self.deselect_choice(choice)
+        elif (is_alpha and letter_choices) or (not is_alpha and digit_choices):
+            # If an item of the same type (letter/number) is already selected, replace it.
+            self.replace_existing_choice(choice, letter_choices if is_alpha else digit_choices)
+        else:
+            # Add the new choice and update the button appearance.
+            self.select_new_choice(choice)
+
+    def form_and_display_pair(self):
+        # Create a pair from the selected letter and number and display it.
+        letters, digits = self.extract_letters_and_digits_from_selected()
+        match = ''.join(letters) + ''.join(digits)
+
+        # Update the text of the number button to show the pair and reset the appearance of the letter button.
+        for selected_choice in list(self.selected_choices):
+            if selected_choice.isdigit():
+                self.choice_buttons[selected_choice].configure(text=match)
+            self.reset_button_appearance(selected_choice)
+        self.selected_choices.clear()
+
+    def extract_letters_and_digits_from_selected(self):
+        letters = {choice for choice in self.selected_choices if choice.isalpha()}
+        digits = {choice for choice in self.selected_choices if choice.isdigit()}
+        return letters, digits
+
+    def deselect_choice(self, choice):
+        self.selected_choices.remove(choice)
+        self.reset_button_appearance(choice)
+
+    def select_new_choice(self, choice):
+        self.selected_choices.add(choice)
+        self.choice_buttons[choice].configure(
+            fg_color=self.pink, 
+            text_color="black", 
+            hover_color=self.pink)
+
+    def replace_existing_choice(self, choice, existing_choices):
+        # Deselect the existing choice of the same type (letter or digit).
+        existing_choice = existing_choices.pop()
+        self.deselect_choice(existing_choice)
+        # Select the new choice.
+        self.select_new_choice(choice)
+
+    def update_choice_selection_and_appearance(self, choice):
+        if choice in self.selected_choices:
+            self.selected_choices.remove(choice)
+            self.reset_button_appearance(choice)
+        else:
+            self.selected_choices.add(choice)
+            self.highlight_button_appearance(choice)
+    
+    def reset_button_appearance(self, choice):
+        self.choice_buttons[choice].configure(fg_color=self.mid_grey, text_color="white", hover_color=self.hover_grey)
+    
+    def highlight_button_appearance(self, choice):
+        self.choice_buttons[choice].configure(
+            fg_color=self.pink, 
+            text_color="black", 
+            hover_color=self.pink)
+            
+        
     # ----------------------------------------------------------------------------------------------
     # DISPLAY WIDGETS
     # ----------------------------------------------------------------------------------------------
@@ -581,11 +799,11 @@ class QuizApp(ctk.CTk):
             self.main_menu_frame, 
             text="QUIZZ APP", 
             font=(self.font, 40, "bold"), 
-            fg_color="#ff9898", 
+            fg_color=self.pink, 
             text_color="black")
         self.header.pack()
         self.header.configure(
-            height=100)
+            height=self.header_height)
     
     def display_certif_select_label(self):
         self.certif_select_label = ctk.CTkLabel(
@@ -593,10 +811,10 @@ class QuizApp(ctk.CTk):
             text="SELECT THE CERTIFICATION", 
             font=(self.font, 20, "bold"), 
             fg_color="#000000", 
-            text_color="#ff9898")
+            text_color=self.pink)
         self.certif_select_label.pack()
         self.certif_select_label.configure(
-            height=50)
+            height=self.certif_select_label_height)
     
     def display_certif_combobox(self):
         certif_codes = self.load_certifications_code()
@@ -624,37 +842,54 @@ class QuizApp(ctk.CTk):
             text="NUMBER OF QUESTIONS: -", 
             font=(self.font, 20, "bold"), 
             fg_color="#000000", 
-            text_color="#ff9898")
+            text_color=self.pink)
         self.question_count_label.pack(pady=(20, 0))
         self.question_count_label.configure(
-            height=50)
+            height=self.question_count_label_height)
         
     def display_start_button(self):
         self.start_button = ctk.CTkButton(
-            self.main_menu_frame,
+            self.start_and_reset_frame,
             text="START QUIZ", 
             font=(self.font, 20, "bold"),
             text_color="black",
-            fg_color="#202020", 
+            fg_color=self.mid_grey, 
             bg_color="transparent",
             state="disabled",
             corner_radius=10,
             command=self.load_questions)
-        self.start_button.pack(pady=(20, 0))
+        self.start_button.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         self.start_button.configure(
-            height=60, width=200)
+            height=self.start_button_height,
+            width=200)
+    
+    def display_reset_button(self):
+        self.reset_button = ctk.CTkButton(
+            self.start_and_reset_frame,
+            text="RESET", 
+            font=(self.font, 20, "bold"),
+            text_color="black",
+            fg_color=self.mid_grey, 
+            bg_color="transparent",
+            state="disabled",
+            corner_radius=10,
+            command=self.reset_questions)
+        self.reset_button.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        self.reset_button.configure(
+            height=self.start_button_height,
+            width=200)
     
     def display_question_text(self):
         self.questions_display = ctk.CTkTextbox(
             self.questions_frame,
             font=(self.font_lisible, 16, "bold"),
             fg_color="#303030",
-            text_color="#ff9898",
+            text_color=self.pink,
             border_spacing=20,
             wrap="word",)
-        self.questions_display.pack(pady=20, anchor='center')
+        self.questions_display.pack(pady=0, anchor='center')
         self.questions_display.configure(
-            height=300, 
+            height=self.questions_text_height,
             width=1000)
     
     def display_stop_quiz_button(self):
@@ -670,7 +905,7 @@ class QuizApp(ctk.CTk):
             command=self.stop_quiz)
         self.stop_button.grid(row=0, column=2, padx=5, pady=5, sticky="nsew")
         self.stop_button.configure(
-            height=60, 
+            height=self.stop_button_height,
             width=200)
         
     def display_submission_button(self):
@@ -681,12 +916,12 @@ class QuizApp(ctk.CTk):
             text_color="black",
             fg_color="#E7E7E7", 
             bg_color="transparent",
-            hover_color="#ff9898",
+            hover_color=self.pink,
             corner_radius=10,
             command=self.check_and_update_choices)
         submit_button.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         submit_button.configure(
-            height=60, 
+            height=self.submission_button_height, 
             width=200)
             
     def display_show_explanation_button(self):
@@ -697,7 +932,7 @@ class QuizApp(ctk.CTk):
             text_color="black",
             fg_color="#E7E7E7", 
             bg_color="transparent",
-            hover_color="#ff9898",
+            hover_color=self.pink,
             corner_radius=10,
             command=self.show_explanation)
         review_button.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
@@ -713,14 +948,30 @@ class QuizApp(ctk.CTk):
             text_color="black",
             fg_color="#E7E7E7", 
             bg_color="transparent",
-            hover_color="#ff9898",
+            hover_color=self.pink,
             corner_radius=10,
             command=self.next_question)
         next_question_button.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
         next_question_button.configure(
             height=60, 
             width=200)
-
+    
+    # ----------------------------------------------------------------------------------------------
+    # SHOW AND HIDE FRAMES
+    # ----------------------------------------------------------------------------------------------
+        
+    def show_main_answers_frame(self):
+        self.answers_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answer_space, relx=0.5, anchor='n')
+        
+    def hide_main_answers_frame(self):
+        self.answers_frame.place_forget()
+        
+    def show_second_answers_frame(self):
+        self.second_answer_frame.place(x=0, y=self.main_menu_frame_height+self.questions_frame_height+self.answers_frame_height-self.answer_space, relx=0.5, anchor='n')
+    
+    def hide_second_answers_frame(self):
+        self.second_answer_frame.place_forget()
+        
 
     # ----------------------------------------------------------------------------------------------
     # DISABLE WIDGETS
@@ -734,7 +985,7 @@ class QuizApp(ctk.CTk):
     def disable_start_button(self):
         self.start_button.configure(
             text_color="black",
-            fg_color="#202020",
+            fg_color=self.mid_grey,
             bg_color="transparent",
             state="disabled",)
     
@@ -757,10 +1008,17 @@ class QuizApp(ctk.CTk):
     
     def enable_start_button(self):
         self.start_button.configure(
-            text_color="black",
-            fg_color="#202020",
+            fg_color=self.white_grey,
             bg_color="transparent",
-            state="enabled",)
+            hover_color=self.pink,
+            state="normal",)
+    
+    def enable_reset_button(self):
+        self.reset_button.configure(
+            fg_color=self.white_grey,
+            bg_color="transparent",
+            hover_color=self.pink,
+            state="normal",)
         
         
     # ----------------------------------------------------------------------------------------------
@@ -796,8 +1054,14 @@ class QuizApp(ctk.CTk):
         
     def destroy_question_text(self):
         self.questions_display.destroy()
-            
-            
+        
+    def destroy_answers_frame(self):
+        self.answers_frame.destroy()
+    
+    def destroy_second_answers_frame(self):
+        self.second_answer_frame.destroy()
+    
+       
     # ----------------------------------------------------------------------------------------------
     # CLEAR WIDGETS
     # ----------------------------------------------------------------------------------------------
@@ -819,6 +1083,34 @@ class QuizApp(ctk.CTk):
     
     def set_correct_answer_time(self, time):
         self.correct_answer_time = time
+        
+    # ----------------------------------------------------------------------------------------------
+    # USEFUL FUNCTIONS
+    # ----------------------------------------------------------------------------------------------
+    
+    def separate_letter_number(self, choice):
+        letter_choice = ""
+        number_choice = ""
+        for index, char in enumerate(choice):
+            if char.isalpha():
+                letter_choice += char
+            elif char.isdigit():
+                number_choice += char
+        return letter_choice, number_choice
+    
+    def count_letters_and_numbers(self, input_set):
+        letters = sum(str(elem).isalpha() for elem in input_set)
+        numbers = sum(str(elem).isdigit() for elem in input_set)
+        return letters, numbers
+
+    def remove_letters_from_set(self, input_set):
+        # Using set comprehension to remove letters and create a new set
+        return {item for item in input_set if not item.isalpha()}
+
+    def remove_digits_from_set(self, input_set):
+        # Using list comprehension to remove digits and create a new list
+        return {item for item in input_set if not item.isdigit()}
+
         
 # Create the main window (root)
 if __name__ == "__main__":
