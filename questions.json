@@ -451,13 +451,13 @@
     },
     {
         "QuestionID": 46,
-        "Question": "Azure VM :\nA. IaaS\nB. PaaS\nC. SaaS\n\nAzure SQL Database :\nA. IaaS\nB. PaaS\nC. SaaS",
-        "Answer": "AB",
+        "Question": "Azure VM :\nA. IaaS\nB. PaaS\nC. SaaS\n\nAzure SQL Database :\nD. IaaS\nE. PaaS\nF. SaaS",
+        "Answer": "AE",
         "Explanation": "Azure virtual machines are Infrastructure as a Service (IaaS).\nInfrastructure as a Service is the most flexible category of cloud services. It aims to give you complete control over the hardware that runs your application (IT infrastructure servers and virtual machines (VMs), storage, networks, and operating systems). Instead of buying hardware, with IaaS, you rent it.\n\nAzure SQL databases are Platform as a Service (Paas).\nAzure SQL Database is a fully managed Platform as a Service (PaaS) Database Engine that handles most of the database management functions such as upgrading, patching, backups, and monitoring without user involvement. Azure SQL Database is always running on the latest stable version of SQL Server\nDatabase Engine and patched OS with 99.99% availability. PaaS capabilities that are built-in into Azure SQL database enable you to focus on the domain specific database administration and optimization activities that are critical for your business.",
         "Counter": 0,
         "CertifCode": "az-900",
         "QuestionType": "multiplechoice",
-        "Choices": "ABCABC"
+        "Choices": "ABCDEF"
     },
     {
         "QuestionID": 47,
@@ -3711,13 +3711,13 @@
     },
     {
         "QuestionID": 372,
-        "Question": "All Azure services that are in public preview are [\u2026].\nA. provided without any documentation. \nB. only configurable from Azure CLI. \nC. excluded from the Service Level Agreements. \nD. only configurable from the Azure portal.",
+        "Question": "All Azure services that are in public preview are [\u2026].\nA. provided without any documentation. \nB. only configurable from Azure CLI\nC. excluded from the Service Level Agreements. \nD. only configurable from the Azure portal.",
         "Answer": "C",
         "Explanation": "During this phase we allow any customer with the proper Azure AD license to evaluate the new feature. Microsoft Customer Support Services will supply support services during this phase, but normal service level agreements do not apply.",
         "Counter": 0,
         "CertifCode": "az-900",
         "QuestionType": "multiplechoice",
-        "Choices": "ABICD"
+        "Choices": "ABCD"
     },
     {
         "QuestionID": 373,

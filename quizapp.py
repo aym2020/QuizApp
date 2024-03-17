@@ -14,7 +14,7 @@ import re
 
 """
 TODO:
-- Fix answer of the question 372/46
+- Fix answer of the question 372/46/
 - Add custom fonts
 """
 
@@ -76,7 +76,6 @@ class QuizApp(ctk.CTk):
         self.geometry(f"{self.width}x{self.height}+{self.padding//2}+{self.padding//2}")
         self.minsize(self.width, self.height)
  
-        
         # Initialize selected_certif to track the current selection
         self.selected_certif    = None
         self.selected_answer    = None
@@ -87,9 +86,9 @@ class QuizApp(ctk.CTk):
         self.font_header        = ctk.CTkFont(family=self.family_font_header, size=70, weight="bold")#, slant="italic")
         
         # global variables
-        self.test_color             = False
-        self.test_question          = False
-        self.question_picked        = 100 # 124/457/249 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno / bug 137 171 249 *187
+        self.test_color             = True
+        self.test_question          = True
+        self.question_picked        = 372 # 124/457/249 drag and drop / 97/112 longue question / 100 hotspot / 365 multiple choice / 195 yesno / 
         self.correct_answer_time    = 50
         self.green                  = "#3EB20C" # Correctly selected
         self.dark_green             = "#2B720C" # Correct but not selected
@@ -132,7 +131,7 @@ class QuizApp(ctk.CTk):
         return scaling_factor
     
     def initialize_widgets_height(self, screen_width, screen_height, size_reference, screen_scaling_factor):
-        if screen_width == 1920 and screen_height == 1080 and screen_scaling_factor == 1:
+        if screen_width == 1920 and screen_height == 1080 and int(screen_scaling_factor) == 1:
             # Height of frame and widgets
             self.main_menu_frame_height         = 242   /size_reference *screen_height
             self.header_height                  = 80    /size_reference *screen_height
@@ -150,7 +149,7 @@ class QuizApp(ctk.CTk):
             self.answers_frame_height           = 102   /size_reference *screen_height
             self.second_answer_frame_height     = 102   /size_reference *screen_height
             self.answer_space                   = 110
-            self.second_answer_frame_space      = 25
+            self.second_answer_frame_space      = 45
             
             self.submission_space               = 160
             self.submission_frame_height        = 88    /size_reference *screen_height
